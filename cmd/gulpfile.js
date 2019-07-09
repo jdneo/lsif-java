@@ -18,7 +18,7 @@ gulp.task('clean', (done) => {
 });
 
 gulp.task('build-indexer', (done) => {
-    cp.execSync(`${mvnw()} clean verify`, { cwd: rootPath, stdio: [0, 1, 2] });
+    cp.execSync(`${mvnw()} clean verify -Pfast -Denvironment.os=win32 -Denvironment.ws=win32 -Denvironment.arch=x86_64`, { cwd: rootPath, stdio: [0, 1, 2] });
     gulp.src(path.join(rootPath, 'com.microsoft.java.lsif.product', 'target', 'repository', '**/*'))
         .pipe(gulp.dest(path.join(rootPath, 'cmd', 'repository')));
     done();

@@ -35,13 +35,9 @@ import com.microsoft.java.lsif.core.internal.protocol.Document;
 import com.microsoft.java.lsif.core.internal.protocol.Project;
 import com.microsoft.java.lsif.core.internal.task.ASTTask;
 import com.microsoft.java.lsif.core.internal.task.TaskType;
-import com.microsoft.java.lsif.core.internal.visitors.DefinitionVisitor;
 import com.microsoft.java.lsif.core.internal.visitors.DiagnosticVisitor;
 import com.microsoft.java.lsif.core.internal.visitors.DocumentVisitor;
-import com.microsoft.java.lsif.core.internal.visitors.HoverVisitor;
-import com.microsoft.java.lsif.core.internal.visitors.ImplementationsVisitor;
-import com.microsoft.java.lsif.core.internal.visitors.ReferencesVisitor;
-import com.microsoft.java.lsif.core.internal.visitors.TypeDefinitionVisitor;
+import com.microsoft.java.lsif.core.internal.visitors.LsifVisitor;
 
 import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
@@ -61,7 +57,6 @@ public class Indexer {
 	public void generateLsif() throws JavaModelException {
 		NullProgressMonitor monitor = new NullProgressMonitor();
 		IPath path = this.handler.initialize();
-
 		initializeJdtls();
 		LsifService lsif = new LsifService();
 
@@ -81,7 +76,8 @@ public class Indexer {
 
 		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
 
-		final ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		final ExecutorService threadPool = Executors
+				.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
 		for (IProject proj : projects) {
 			if (proj == null) {
@@ -160,31 +156,31 @@ public class Indexer {
 				.flatMap(item -> Observable.just(item).observeOn(Schedulers.from(threadPool)).map(task -> {
 					switch (task.getTaskType()) {
 						case DEFINITION:
-							DefinitionVisitor definitionVisitor = new DefinitionVisitor(lsif, task.getContext());
-							task.getContext().getCompilationUnit().accept(definitionVisitor);
+							LsifVisitor lsifVisitor = new LsifVisitor(lsif, task.getContext());
+							task.getContext().getCompilationUnit().accept(lsifVisitor);
 							break;
 						case DIAGNOSTIC:
 							DiagnosticVisitor diagnosticVisitor = new DiagnosticVisitor(lsif, task.getContext());
 							diagnosticVisitor.enlist();
 							break;
-						case HOVER:
-							HoverVisitor hoverVisitor = new HoverVisitor(lsif, task.getContext());
-							task.getContext().getCompilationUnit().accept(hoverVisitor);
-							break;
-						case IMPLEMENTATION:
-							ImplementationsVisitor implementationVisitor = new ImplementationsVisitor(lsif,
-									task.getContext());
-							task.getContext().getCompilationUnit().accept(implementationVisitor);
-							break;
-						case REFERENCE:
-							ReferencesVisitor referencesVisitor = new ReferencesVisitor(lsif, task.getContext());
-							task.getContext().getCompilationUnit().accept(referencesVisitor);
-							break;
-						case TYPEDEFINITION:
-							TypeDefinitionVisitor typeDefinitionVisitor = new TypeDefinitionVisitor(lsif,
-									task.getContext());
-							task.getContext().getCompilationUnit().accept(typeDefinitionVisitor);
-							break;
+//						case HOVER:
+//							HoverVisitor hoverVisitor = new HoverVisitor(lsif, task.getContext());
+//							task.getContext().getCompilationUnit().accept(hoverVisitor);
+//							break;
+//						case IMPLEMENTATION:
+//							ImplementationsVisitor implementationVisitor = new ImplementationsVisitor(lsif,
+//									task.getContext());
+//							task.getContext().getCompilationUnit().accept(implementationVisitor);
+//							break;
+//						case REFERENCE:
+//							ReferencesVisitor referencesVisitor = new ReferencesVisitor(lsif, task.getContext());
+//							task.getContext().getCompilationUnit().accept(referencesVisitor);
+//							break;
+//						case TYPEDEFINITION:
+//							TypeDefinitionVisitor typeDefinitionVisitor = new TypeDefinitionVisitor(lsif,
+//									task.getContext());
+//							task.getContext().getCompilationUnit().accept(typeDefinitionVisitor);
+//							break;
 					}
 					return 0;
 				})).blockingSubscribe();
