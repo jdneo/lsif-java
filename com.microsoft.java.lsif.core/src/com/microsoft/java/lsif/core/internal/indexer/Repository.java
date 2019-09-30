@@ -5,6 +5,7 @@
 
 package com.microsoft.java.lsif.core.internal.indexer;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,6 +13,7 @@ import com.microsoft.java.lsif.core.internal.LsifUtils;
 import com.microsoft.java.lsif.core.internal.emitter.LsifEmitter;
 import com.microsoft.java.lsif.core.internal.protocol.Document;
 import com.microsoft.java.lsif.core.internal.protocol.Event;
+import com.microsoft.java.lsif.core.internal.protocol.Project;
 import com.microsoft.java.lsif.core.internal.protocol.Range;
 import com.microsoft.java.lsif.core.internal.visitors.SymbolData;
 
@@ -31,6 +33,10 @@ public class Repository {
 	// Value: SymbolData
 	private Map<String, SymbolData> symbolDataMap = new ConcurrentHashMap<>();
 
+	// Key: documentURI
+	// Value: Document object
+	private Map<String, Document> beginededDocumentMap = new ConcurrentHashMap<>();
+
 	private Repository() {
 	}
 
@@ -42,16 +48,18 @@ public class Repository {
 		return RepositoryHolder.INSTANCE;
 	}
 
-	public synchronized Document enlistDocument(LsifService service, String uri) {
+	public synchronized Document enlistDocument(LsifService service, String uri, Project projVertex) {
 		uri = LsifUtils.normalizeUri(uri);
 		Document targetDocument = findDocumentByUri(uri);
 		if (targetDocument == null) {
 			targetDocument = service.getVertexBuilder().document(uri);
 			addDocument(targetDocument);
+			LsifEmitter.getInstance().emit(targetDocument);
+			addToBeginededDocuments(targetDocument);
 			LsifEmitter.getInstance()
 					.emit(service.getVertexBuilder().event(Event.EventScope.DOCUMENT, Event.EventKind.BEGIN,
 							targetDocument.getId()));
-			LsifEmitter.getInstance().emit(targetDocument);
+			LsifEmitter.getInstance().emit(service.getEdgeBuilder().contains(projVertex, targetDocument));
 		}
 
 		return targetDocument;
@@ -69,17 +77,29 @@ public class Repository {
 		return range;
 	}
 
-	public Range enlistRange(LsifService service, String uri, org.eclipse.lsp4j.Range lspRange) {
-		return enlistRange(service, enlistDocument(service, uri), lspRange);
+	public Range enlistRange(LsifService service, String uri, org.eclipse.lsp4j.Range lspRange, Project projVertex) {
+		return enlistRange(service, enlistDocument(service, uri, projVertex), lspRange);
 	}
 
-	public synchronized SymbolData enlistSymbolData(String id, Document docVertex) {
+	public synchronized SymbolData enlistSymbolData(String id, Document docVertex, Project projVertex) {
 		SymbolData symbolData = findSymbolDataById(id);
 		if (symbolData == null) {
-			symbolData = new SymbolData(docVertex);
+			symbolData = new SymbolData(projVertex, docVertex);
 			addSymbolData(id, symbolData);
 		}
 		return symbolData;
+	}
+
+	public void addToBeginededDocuments(Document doc) {
+		this.beginededDocumentMap.put(doc.getUri(), doc);
+	}
+
+	public void removeFromBeginededDocuments(String uri) {
+		this.beginededDocumentMap.remove(uri);
+	}
+
+	public ArrayList<Document> getAllBeginededDocuments() {
+		return new ArrayList<>(this.documentMap.values());
 	}
 
 	private void addDocument(Document doc) {
