@@ -27,6 +27,7 @@
 	<modules>
 		<module>com.microsoft.java.lsif.target</module>
 		<module>com.microsoft.java.lsif.core</module>
+		<module>com.microsoft.java.lsif.core.tests</module>
 		<module>com.microsoft.java.lsif.product</module>
 	</modules>
 	<build>

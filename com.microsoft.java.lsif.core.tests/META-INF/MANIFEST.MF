@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: LSIF Core Tests
+Bundle-SymbolicName: com.microsoft.java.lsif.core.tests
+Bundle-Version: 0.5.2
+Fragment-Host: com.microsoft.java.lsif.core;bundle-version="0.5.2"
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Require-Bundle: org.junit.jupiter.api;bundle-version="5.7.0",
+ org.junit.jupiter.engine;bundle-version="5.7.0"
